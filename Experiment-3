@@ -1,0 +1,12 @@
+
+def forward(self, x: torch.Tensor) -> torch.Tensor:
+        
+        if self.training:
+
+            mean = x.mean(dim=0)
+            
+            var = x.var(dim=0, unbiased=False)
+          
+            x_hat = (x - mean) / torch.sqrt(var + self.eps)
+            
+            out = self.gamma * x_hat + self.beta
