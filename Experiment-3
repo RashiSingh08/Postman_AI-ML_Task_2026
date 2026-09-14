@@ -1,19 +1,21 @@
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import v2
 
-class CustomBatchNorm1d(nn.module):
- def __init__(self, num_features = int, eps: float = 10e-4 , momentum:float = 0.1):
+
+class CustomBatchNorm1d(nn.Module):
+    def __init__(self, num_features: int, eps: float = 10e-6 , momentum:float = 0.1):
         super().__init__()
         self.eps = eps
         self.momentum = momentum
 
         self.gamma = nn.Parameter(torch.ones(num_features))
-        elf.beta = nn.Parameter(torch.zeros(num_features))
+        self.beta = nn.Parameter(torch.zeros(num_features))
 
-        self.register_buffer('unning_mean', torch.zeros(num_features))
+        self.register_buffer('running_mean', torch.zeros(num_features))
         self.register_buffer('running_var', torch.ones(num_features))
 
 
@@ -32,8 +34,22 @@ def forward(self, x: torch.Tensor) -> torch.Tensor:
             with torch.no_grad():
                  self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
                  self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var
+            return self.gamma * x_hat + self.beta
 
         else:
              x_hat = (x - self.running_mean) / torch.sqrt(self.running_var + self.eps)
+
+        return self.gamma * x_hat + self.beta
+
+if __name__ == "__main__":
+    torch.manual_seed(42)
+
+
+    x = torch.randn(8, 3)
+    
+    print("Input Tensor")
+    print(x)
+
+
 
              
