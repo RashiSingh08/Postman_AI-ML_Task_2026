@@ -1,3 +1,21 @@
+import torch
+from torch import nn
+from torch.utils.data import DataLoader
+from torchvision import datasets
+from torchvision.transforms import v2
+
+class CustomBatchNorm1d(nn.module):
+ def __init__(self, num_features = int, eps: float = 10e-4 , momentum:float = 0.1):
+        super().__init__()
+        self.eps = eps
+        self.momentum = momentum
+
+        self.gamma = nn.Parameter(torch.ones(num_features))
+        elf.beta = nn.Parameter(torch.zeros(num_features))
+
+        self.register_buffer('unning_mean', torch.zeros(num_features))
+        self.register_buffer('running_var', torch.ones(num_features))
+
 
 def forward(self, x: torch.Tensor) -> torch.Tensor:
         
