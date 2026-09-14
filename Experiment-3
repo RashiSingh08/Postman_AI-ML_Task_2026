@@ -5,12 +5,15 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import v2
 
+ # This was 3.1 and 3.4 together...
+# I learned PyTorch syntax 9 hours prior to writing this using docs.pytorch.org/tutorials/beginner/... Please forgive the AI usage and my tardiness...
 
 class CustomBatchNorm1d(nn.Module):
     def __init__(self, num_features: int, eps: float = 10e-6 , momentum:float = 0.1):
         super().__init__()
         self.eps = eps
         self.momentum = momentum
+# Wouldn't a momentum of 0.01 be an absolute treat for large datasets. But we on small ones here...
 
         self.gamma = nn.Parameter(torch.ones(num_features))
         self.beta = nn.Parameter(torch.zeros(num_features))
@@ -18,28 +21,34 @@ class CustomBatchNorm1d(nn.Module):
         self.register_buffer('running_mean', torch.zeros(num_features))
         self.register_buffer('running_var', torch.ones(num_features))
 
+# We do this self.nejvyc thing so that we can call these terms again in code. Super is super, after all...
 
-def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         
-        if self.training:
+            if self.training:
 
-            mean = x.mean(dim=0)
+                mean = x.mean(dim=0)
             
-            var = x.var(dim=0, unbiased=False)
+                var = x.var(dim=0, unbiased=False)
           
-            x_hat = (x - mean) / torch.sqrt(var + self.eps)
+                x_hat = (x - mean) / torch.sqrt(var + self.eps)
             
-            out = self.gamma * x_hat + self.beta
+                out = self.gamma * x_hat + self.beta
 
-            with torch.no_grad():
-                 self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
-                 self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var
+                with torch.no_grad():
+                     self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
+                     self.running_var = (1 - self.momentum) * self.running_var + self.momentum * x.var(dim=0, unbiased=True)
+                return self.gamma * x_hat + self.beta
+
+            else:
+                 x_hat = (x - self.running_mean) / torch.sqrt(self.running_var + self.eps)
+
             return self.gamma * x_hat + self.beta
 
-        else:
-             x_hat = (x - self.running_mean) / torch.sqrt(self.running_var + self.eps)
+# PyTorch syntax isnt as bad as I thought it would be, huh... A lot of it could be done on my own...
+# Should've started earlier... Then couldve completed all 6 points with time to spare for other questions to play with...
 
-        return self.gamma * x_hat + self.beta
+# From here starts 3.3
 
 if __name__ == "__main__":
     torch.manual_seed(42)
@@ -50,6 +59,38 @@ if __name__ == "__main__":
     print("Input Tensor")
     print(x)
 
+ # Here is where I start using Google as my lord and savior
 
+    custom_bn = CustomBatchNorm1d(num_features=3)
+    ref_bn = nn.BatchNorm1d(num_features=3)
 
-             
+    custom_bn.train()
+    ref_bn.train()
+
+    out_custom = custom_bn(x)
+    out_ref = ref_bn(x)
+
+    print("\nTraining Mode Forward Pass")
+    print("Custom Layer Output:\n", out_custom)
+    print("\nPyTorch Reference Output:\n", out_ref)
+    
+    train_match = torch.allclose(out_custom, out_ref, atol=1e-5)
+    print("\nTraining Mode Match:", train_match)
+
+    print("\nTracked Running Statistics")
+    print("Updated Running Mean:", custom_bn.running_mean)
+    print("Updated Running Var: ", custom_bn.running_var)
+
+    # Test Evaluation Mode Forward Pass
+
+    custom_bn.eval()
+    ref_bn.eval()
+
+    x_test = torch.randn(2, 3)
+# Different numbers as we wanna show that it works for every data size...
+    eval_custom = custom_bn(x_test)
+    eval_ref = ref_bn(x_test)
+
+    eval_match = torch.allclose(eval_custom, eval_ref, atol=1e-5)
+    print("\nEvaluation Mode Forward Pass")
+    print("Eval Mode Match:", eval_match)
